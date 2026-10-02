@@ -1,10 +1,9 @@
 import scamData from '../../data/scam_numbers.json';
 import { ScamRecord } from '../types/scam';
 
-const records = scamData as ScamRecord[];
+const records: ScamRecord[] = scamData as ScamRecord[];
 
 export function findScamByNumber(input: string): ScamRecord | undefined {
-  // 移除常見符號，只比對純數字
   const cleanInput = input.replace(/\D/g, '');
   if (!cleanInput) return undefined;
 
