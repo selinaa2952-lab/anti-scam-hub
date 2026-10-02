@@ -1,295 +1,160 @@
-'use client';
-
-import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { getAllScamRecords } from '@/lib/scam-db';
 
-interface LocalReport {
-  id: string;
-  number: string;
-  scamType: string;
-  callerIdentity: string;
-  summary: string;
-  timestamp: string;
-  status: '待核對';
-}
+export default function HomePage() {
+  const records = getAllScamRecords();
 
-const SCAM_TYPES = ['假檢警', '分期付款', '假投資', '騷擾', '其他'];
-
-export default function QuickReportPage() {
-  // 表單狀態
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [scamType, setScamType] = useState('分期付款');
-  const [callerIdentity, setCallerIdentity] = useState('');
-  const [summary, setSummary] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-
-  // 當前通報紀錄清單
-  const [reports, setReports] = useState<LocalReport[]>([]);
-
-  // 提交處理
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg('');
-
-    // 格式驗證：僅接受數字、破折號與 + 號
-    const phoneRegex = /^[0-9\-+ ]+$/;
-    if (!phoneNumber.trim() || !phoneRegex.test(phoneNumber.trim())) {
-      setErrorMsg('請輸入正確的電話格式（僅接受數字、破折號 - 與 + 號）');
-      return;
-    }
-
-    const now = new Date();
-    const formattedTime = now.toLocaleString('zh-TW', {
-      hour12: false,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-
-    const newReport: LocalReport = {
-      id: Date.now().toString(),
-      number: phoneNumber.trim(),
-      scamType,
-      callerIdentity: callerIdentity.trim() || '未說明',
-      summary: summary.trim() || '無話術摘要',
-      timestamp: formattedTime,
-      status: '待核對',
-    };
-
-    // 新增至清單最上方
-    setReports([newReport, ...reports]);
-
-    // 清空輸入框
-    setPhoneNumber('');
-    setCallerIdentity('');
-    setSummary('');
-  };
-
-  // 匯出今日通報紀錄文字檔
-  const handleExportText = () => {
-    if (reports.length === 0) {
-      alert('目前尚無通報紀錄可供匯出！');
-      return;
-    }
-
-    const todayStr = new Date().toISOString().split('T')[0];
-    let fileContent = `=== 全民反詐情資庫 - 今日通報紀錄彙整 (${todayStr}) ===\n總計通報：${reports.length} 筆\n\n`;
-
-    reports.forEach((item, index) => {
-      fileContent += `【第 ${index + 1} 筆通報】\n`;
-      fileContent += `通報狀態：${item.status}\n`;
-      fileContent += `電話號碼：${item.number}\n`;
-      fileContent += `疑似類型：${item.scamType}\n`;
-      fileContent += `自稱身分：${item.callerIdentity}\n`;
-      fileContent += `通報時間：${item.timestamp}\n`;
-      fileContent += `話術摘要：${item.summary}\n`;
-      fileContent += `----------------------------------------\n`;
-    });
-
-    // 觸發文字檔下載
-    const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `詐騙電話通報紀錄_${todayStr}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
+  // 將資料夾內的 4 張卡片圖片依序分配給清單卡片
+  const cardImages = [
+    '/images/card01.png',
+    '/images/card02.png',
+    '/images/card03.png',
+    '/images/card04.png',
+  ];
 
   return (
-    <div style={{ maxWidth: '480px', margin: '0 auto', minHeight: '100vh', backgroundColor: '#F8FAFC', padding: '1.25rem', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div style={{ backgroundColor: '#FAF9F6', color: '#1F2937', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
-      {/* 頂部導航 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <Link href="/" style={{ color: '#64748B', textDecoration: 'none', fontSize: '14px', fontWeight: 'bold' }}>
-          ← 回到首頁
-        </Link>
-        <span style={{ fontSize: '12px', background: '#E2E8F0', padding: '3px 8px', borderRadius: '12px', color: '#475569' }}>
-          免登入通報
-        </span>
+      {/* 1. 頂部跑馬燈公告 */}
+      <div style={{ backgroundColor: '#FF8A50', color: '#FFFFFF', fontSize: '13px', padding: '9px 0', textAlign: 'center', fontWeight: 'bold', letterSpacing: '1px' }}>
+        📢 提醒：接獲「+886」或「自稱電商客服要求解除分期」電話，請立即掛斷並至本站查核！
       </div>
 
-      {/* 標題區 */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#0F172A', margin: '0 0 0.5rem 0' }}>
-          可疑電話快速通報與標註
-        </h1>
-        <p style={{ fontSize: '13px', color: '#64748B', margin: 0, lineHeight: '1.5' }}>
-          剛掛斷陌生電話？隨手留下情報，守護自身與親友財產安全。
-        </p>
-      </div>
-
-      {/* 通報表單 */}
-      <form onSubmit={handleSubmit} style={{ background: '#FFFFFF', padding: '1.25rem', borderRadius: '16px', border: '2px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        
-        {/* 1. 電話號碼 (必填) */}
-        <div>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#1E293B', marginBottom: '0.4rem' }}>
-            可疑電話號碼 <span style={{ color: '#EF4444' }}>*</span>
-          </label>
-          <input
-            type="text"
-            placeholder="例：+886-2-2345-6789"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '15px', outline: 'none', boxSizing: 'border-box' }}
-            required
-          />
-          {errorMsg && <div style={{ color: '#EF4444', fontSize: '12px', marginTop: '0.3rem' }}>{errorMsg}</div>}
+      {/* 2. 導航列 (Navbar) */}
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem 2.5rem', borderBottom: '2px solid #1F2937', backgroundColor: '#FFFFFF' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '26px' }}>🛡️</span>
+          <span style={{ fontWeight: '900', fontSize: '22px', letterSpacing: '-0.5px' }}>
+            SCAM HUB <span style={{ fontSize: '12px', background: '#1F2937', color: '#fff', padding: '2px 8px', borderRadius: '12px' }}>v1.0</span>
+          </span>
         </div>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <Link href="/report" style={{ background: '#FF4757', color: '#FFFFFF', padding: '9px 20px', borderRadius: '30px', fontWeight: 'bold', textDecoration: 'none', border: '2px solid #1F2937', boxShadow: '2px 2px 0px #1F2937' }}>
+            ＋ 我要通報
+          </Link>
+          <Link href="/admin" style={{ background: '#FFFFFF', color: '#1F2937', padding: '9px 20px', borderRadius: '30px', fontWeight: 'bold', textDecoration: 'none', border: '2px solid #1F2937' }}>
+            後台管理
+          </Link>
+        </div>
+      </header>
 
-        {/* 2. 疑似詐騙類型 (必填快選標籤) */}
-        <div>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#1E293B', marginBottom: '0.4rem' }}>
-            疑似詐騙類型 <span style={{ color: '#EF4444' }}>*</span>
-          </label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-            {SCAM_TYPES.map((type) => {
-              const isSelected = scamType === type;
-              return (
-                <button
-                  type="button"
-                  key={type}
-                  onClick={() => setScamType(type)}
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: '20px',
-                    fontSize: '13px',
-                    fontWeight: isSelected ? 'bold' : 'normal',
-                    backgroundColor: isSelected ? '#1E293B' : '#F1F5F9',
-                    color: isSelected ? '#FFFFFF' : '#475569',
-                    border: isSelected ? '1px solid #1E293B' : '1px solid #E2E8F0',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {type}
-                </button>
-              );
-            })}
+      {/* 3. Hero 主視覺區（引入 hero-banner.png） */}
+      <section style={{ backgroundColor: '#4EBA97', borderBottom: '3px solid #1F2937', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2.5rem 1.5rem 1rem 1.5rem', textAlign: 'center' }}>
+          
+          <div style={{ display: 'inline-block', backgroundColor: '#FEFCBF', color: '#744210', padding: '6px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', marginBottom: '1.2rem', border: '2px solid #1F2937' }}>
+            全民即時電話防護網
           </div>
-        </div>
+          
+          <h1 style={{ fontSize: '2.75rem', fontWeight: '900', color: '#FFFFFF', margin: '0 0 1rem 0', letterSpacing: '-1px', textShadow: '2px 2px 0px #1F2937' }}>
+            全民反詐電話情資庫
+          </h1>
 
-        {/* 3. 對方自稱身分 (選填) */}
-        <div>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#1E293B', marginBottom: '0.4rem' }}>
-            對方自稱身分 <span style={{ color: '#94A3B8', fontWeight: 'normal', fontSize: '12px' }}>(選填)</span>
-          </label>
-          <input
-            type="text"
-            placeholder="例：知名電商客服、健保局公務員"
-            value={callerIdentity}
-            onChange={(e) => setCallerIdentity(e.target.value)}
-            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
-          />
-        </div>
-
-        {/* 4. 通話話術摘要 (選填) */}
-        <div>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#1E293B', marginBottom: '0.4rem' }}>
-            通話話術摘要 <span style={{ color: '#94A3B8', fontWeight: 'normal', fontSize: '12px' }}>(選填)</span>
-          </label>
-          <textarea
-            placeholder="例：說我之前買東西被誤設分期，要我操作 ATM 或網銀解除設定..."
-            value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            rows={3}
-            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '14px', outline: 'none', boxSizing: 'border-box', resize: 'vertical' }}
-          />
-        </div>
-
-        {/* 提交按鈕 */}
-        <button
-          type="submit"
-          style={{
-            marginTop: '0.5rem',
-            padding: '0.85rem',
-            backgroundColor: '#DC2626',
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: '10px',
-            fontSize: '15px',
-            fontWeight: '900',
-            cursor: 'pointer',
-            boxShadow: '0 2px 4px rgba(220, 38, 38, 0.3)',
-          }}
-        >
-          🚨 立即新增通報
-        </button>
-      </form>
-
-      {/* 即時通報紀錄預覽區塊 */}
-      <div style={{ marginTop: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2 style={{ fontSize: '1.15rem', fontWeight: 'bold', color: '#0F172A', margin: 0 }}>
-            今日暫存紀錄 ({reports.length})
-          </h2>
-          {reports.length > 0 && (
-            <button
-              onClick={handleExportText}
-              style={{
-                fontSize: '12px',
-                padding: '6px 12px',
-                backgroundColor: '#2563EB',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: '6px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-              }}
-            >
-              📥 匯出今日通報紀錄（文字檔）
+          {/* 搜尋條 */}
+          <div style={{ maxWidth: '560px', margin: '0 auto 2.5rem auto', display: 'flex', gap: '8px', background: '#FFFFFF', padding: '8px', borderRadius: '18px', border: '3px solid #1F2937', boxShadow: '5px 5px 0px #1F2937' }}>
+            <input
+              type="text"
+              placeholder="輸入可疑號碼（例如：02-2345-6789）..."
+              style={{ flex: 1, border: 'none', outline: 'none', padding: '10px 16px', fontSize: '16px', color: '#333' }}
+            />
+            <button style={{ backgroundColor: '#FFD32A', border: '2px solid #1F2937', padding: '10px 24px', borderRadius: '12px', fontWeight: '900', color: '#1F2937', cursor: 'pointer' }}>
+              快速查核
             </button>
-          )}
+          </div>
+
+          {/* Banner 插畫呈現 */}
+          <div style={{ maxWidth: '900px', margin: '0 auto', position: 'relative', borderRadius: '16px 16px 0 0', overflow: 'hidden', border: '3px solid #1F2937', borderBottom: 'none', boxShadow: '4px -4px 0px rgba(0,0,0,0.1)' }}>
+            <img
+              src="/images/hero-banner.png"
+              alt="主視覺插圖"
+              style={{ width: '100%', height: 'auto', display: 'block' }}
+            />
+          </div>
+
+        </div>
+      </section>
+
+      {/* 4. What's new? 卡片列表區（卡片搭配 card01 ~ card04） */}
+      <section style={{ maxWidth: '1100px', margin: '0 auto', padding: '4.5rem 1.5rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <span style={{ fontSize: '13px', fontWeight: '900', letterSpacing: '2px', color: '#FF4757', textTransform: 'uppercase' }}>Alert Database</span>
+          <h2 style={{ fontSize: '2.4rem', fontWeight: '900', margin: '0.3rem 0', letterSpacing: '-0.5px' }}>
+            What's new?
+          </h2>
+          <p style={{ color: '#6B7280', fontSize: '15px', margin: 0 }}>最新通報之詐騙電話名單與話術拆解</p>
         </div>
 
-        {reports.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2.5rem 1rem', background: '#FFFFFF', borderRadius: '12px', border: '1px dashed #CBD5E1', color: '#94A3B8', fontSize: '13px' }}>
-            尚未新增任何紀錄。剛掛斷電話？請填寫上方表單送出！
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {reports.map((item) => (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
+          {records.map((item, index) => {
+            const cardImg = cardImages[index % cardImages.length];
+
+            return (
               <div
                 key={item.id}
                 style={{
                   backgroundColor: '#FFFFFF',
-                  borderRadius: '12px',
-                  padding: '1rem',
-                  border: '1px solid #E2E8F0',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  borderRadius: '16px',
+                  border: '2px solid #1F2937',
+                  boxShadow: '4px 4px 0px #1F2937',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  transition: 'transform 0.15s ease',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '11px', backgroundColor: '#FEF3C7', color: '#92400E', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
-                      ⏳ {item.status}
-                    </span>
-                    <span style={{ fontSize: '11px', backgroundColor: '#F1F5F9', color: '#475569', padding: '2px 8px', borderRadius: '12px' }}>
-                      {item.scamType}
-                    </span>
+                {/* 卡片封面圖 */}
+                <div style={{ width: '100%', aspectRatio: '1 / 1', position: 'relative', borderBottom: '2px solid #1F2937', backgroundColor: '#F3F4F6' }}>
+                  <img
+                    src={cardImg}
+                    alt={item.number}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </div>
+
+                {/* 卡片內容 */}
+                <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                      <span style={{ backgroundColor: '#FFEAA7', color: '#2D3436', fontSize: '11px', fontWeight: 'bold', padding: '3px 8px', borderRadius: '12px', border: '1.5px solid #1F2937' }}>
+                        {item.type}
+                      </span>
+                      <span style={{ fontSize: '12px', color: '#FF4757', fontWeight: '900' }}>
+                        通報 {item.reportCount} 次
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: '1.25rem', fontWeight: '900', color: '#1F2937', marginBottom: '0.5rem' }}>
+                      {item.number}
+                    </div>
+
+                    <p style={{ fontSize: '13px', color: '#4B5563', lineHeight: '1.5', margin: 0 }}>
+                      {item.summary || '自稱客服或公務機構，話術涉及個資核對與轉帳指示。'}
+                    </p>
                   </div>
-                  <span style={{ fontSize: '11px', color: '#94A3AF' }}>{item.timestamp}</span>
-                </div>
 
-                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#1E293B', marginBottom: '0.25rem' }}>
-                  {item.number}
-                </div>
-
-                <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '0.5rem' }}>
-                  <strong>對方自稱：</strong>{item.callerIdentity}
-                </div>
-
-                <div style={{ fontSize: '13px', color: '#334155', background: '#F8FAFC', padding: '0.5rem', borderRadius: '6px', lineHeight: '1.4' }}>
-                  {item.summary}
+                  <div style={{ marginTop: '1.25rem', paddingTop: '0.75rem', borderTop: '1px dashed #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '11px', color: '#9CA3AF' }}>{item.lastReported || '今日紀錄'}</span>
+                    <Link
+                      href={`/number/${item.cleanNumber}`}
+                      style={{ color: '#1F2937', fontWeight: 'bold', fontSize: '12px', textDecoration: 'none', borderBottom: '2px solid #1F2937' }}
+                    >
+                      查看詳細 →
+                    </Link>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 5. 底部頁尾 */}
+      <footer style={{ backgroundColor: '#1F2937', color: '#9CA3AF', padding: '3rem 2rem', textAlign: 'center', fontSize: '13px' }}>
+        <p style={{ margin: '0 0 8px 0', color: '#FFFFFF', fontWeight: 'bold' }}>全民反詐電話情資庫 · Anti-Scam Hub</p>
+        <p style={{ margin: 0 }}>共同守護通訊安全，如有疑慮請即時撥打 165 反詐騙諮詢專線。</p>
+      </footer>
 
     </div>
   );
