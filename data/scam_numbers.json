@@ -1,0 +1,28 @@
+[
+  {
+    "id": "scam-2026-0001",
+    "number": "+1(960)354-2859",
+    "cleanNumber": "19603542859",
+    "type": "境外異常/假冒客服",
+    "riskLevel": "high",
+    "summary": "來電顯示為境外 +1 格式，多為機器自動跳板撥號或假客服話術，請勿接聽與回撥。",
+    "reportCount": 14,
+    "firstReportedAt": "2026-09-04",
+    "lastReportedAt": "2026-10-02",
+    "sourcePlatform": "境外網路電話",
+    "tags": ["+1開頭", "假冒客服", "自動語音"]
+  },
+  {
+    "id": "scam-2026-0002",
+    "number": "02-2345-6789",
+    "cleanNumber": "0223456789",
+    "type": "假冒電商/解除分期扣款",
+    "riskLevel": "critical",
+    "summary": "自稱中油Pay或購物平台資安人員稱帳號遭盜用，隨後由假冒銀行致電要求操作 ATM 或網銀解除扣款。",
+    "reportCount": 68,
+    "firstReportedAt": "2024-05-10",
+    "lastReportedAt": "2026-09-28",
+    "sourcePlatform": "偽冒國內市話",
+    "tags": ["解除分期", "中油Pay", "操作網銀", "假冒銀行"]
+  }
+]
