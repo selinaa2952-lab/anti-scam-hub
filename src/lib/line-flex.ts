@@ -1,7 +1,7 @@
 import { ScamRecord } from '../types/scam';
 
 export function createScamAlertFlexMessage(scam: ScamRecord, websiteBaseUrl: string) {
-  const isCritical = scam.riskLevel === 'critical';
+  const isCritical = (scam.riskLevel as string) === 'critical' || scam.riskLevel === 'high';
   const headerColor = isCritical ? '#DC2626' : '#EA580C';
   const riskTitle = isCritical ? '極高風險！確認為詐騙電話' : '高風險！疑似詐騙電話';
 
